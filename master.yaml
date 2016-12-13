@@ -19,7 +19,7 @@ Resources:
     VPC:
         Type: AWS::CloudFormation::Stack
         Properties:
-            TemplateURL: https://s3.amazonaws.com/ecs-refarch-cloudformation/infrastructure/vpc.yaml
+            TemplateURL: https://s3-eu-west-1.amazonaws.com/cf-templates-6q06p3u86qts-eu-west-1/vpc.yaml
             Parameters:
                 EnvironmentName:    !Ref AWS::StackName
                 VpcCIDR:            10.180.0.0/16
@@ -30,7 +30,7 @@ Resources:
     SecurityGroups:
         Type: AWS::CloudFormation::Stack
         Properties:
-            TemplateURL: https://s3.amazonaws.com/ecs-refarch-cloudformation/infrastructure/security-groups.yaml
+            TemplateURL: https://s3-eu-west-1.amazonaws.com/cf-templates-6q06p3u86qts-eu-west-1/security-groups.yaml
             Parameters: 
                 EnvironmentName: !Ref AWS::StackName
                 VPC: !GetAtt VPC.Outputs.VPC
@@ -38,7 +38,7 @@ Resources:
     ALB:
         Type: AWS::CloudFormation::Stack
         Properties:
-            TemplateURL: https://s3.amazonaws.com/ecs-refarch-cloudformation/infrastructure/load-balancers.yaml
+            TemplateURL: https://s3-eu-west-1.amazonaws.com/cf-templates-6q06p3u86qts-eu-west-1/load-balancers.yaml
             Parameters:
                 EnvironmentName: !Ref AWS::StackName
                 VPC: !GetAtt VPC.Outputs.VPC
@@ -48,19 +48,20 @@ Resources:
     ECS:
         Type: AWS::CloudFormation::Stack
         Properties:
-            TemplateURL: https://s3.amazonaws.com/ecs-refarch-cloudformation/infrastructure/ecs-cluster.yaml
+            TemplateURL: https://s3-eu-west-1.amazonaws.com/cf-templates-6q06p3u86qts-eu-west-1/ecs-cluster.yaml
             Parameters:
                 EnvironmentName: !Ref AWS::StackName
                 InstanceType: t2.medium
-                ClusterSize: 2
+                ClusterMinSize: 2
+                ClusterMaxSize: 10
                 VPC: !GetAtt VPC.Outputs.VPC
                 SecurityGroup: !GetAtt SecurityGroups.Outputs.ECSHostSecurityGroup
-                Subnets: !GetAtt VPC.Outputs.PrivateSubnets
+                Subnets: !GetAtt VPC.Outputs.PublicSubnets
 
     WebsiteService:
         Type: AWS::CloudFormation::Stack
         Properties:
-            TemplateURL: https://s3.amazonaws.com/ecs-refarch-cloudformation/services/website-service/service.yaml
+            TemplateURL: https://s3-eu-west-1.amazonaws.com/cf-templates-6q06p3u86qts-eu-west-1/service.yaml
             Parameters:
                 VPC: !GetAtt VPC.Outputs.VPC
                 Cluster: !GetAtt ECS.Outputs.Cluster
@@ -71,10 +72,6 @@ Resources:
 
 
 Outputs:
-
-    ProductServiceUrl: 
-        Description: The URL endpoint for the product service
-        Value: !Join [ "/", [ !GetAtt ALB.Outputs.LoadBalancerUrl, "products" ]]
 
     WebsiteServiceUrl: 
         Description: The URL endpoint for the website service
