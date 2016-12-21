@@ -1,0 +1,30 @@
+Description:
+  Test stack
+
+Parameters:
+  CreateVPC:
+    Description: Create New VPC?
+    Type: String
+    AllowedValues:
+      - Yes
+      - No
+    Default: Yes
+
+  SelectVPC:
+    Description: Select VPC
+    Type: AWS::EC2::VPC::Id
+
+Conditions:
+  NewVPC: !Equals [!Ref CreateVPC, Yes]
+
+Resources:
+  VPC:
+    Condition: NewVPC
+    Type: AWS::EC2::VPC
+    Properties:
+        CidrBlock: 10.192.0.0/16
+
+Outputs:
+  VPCId:
+    Description: VPC Id.
+    Value: !If [NewVPC, !Ref VPC, !Ref SelectVPC]
