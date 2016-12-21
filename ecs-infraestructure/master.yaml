@@ -1,6 +1,27 @@
 Description: >
   This template deploy a AWS ECS Infraestructure.
 
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: "Network Configuration"
+        Parameters:
+          - CreateVPC
+          - SelectVPC
+      -
+        Label:
+          default: "Amazon ECS Configuration"
+        Parameters:
+          - InstanceType
+          - ClusterMinSize
+          - ClusterMaxSize
+    ParameterLabels:
+      CreateVPC:
+        default: "Create new VPC?"
+      SelectVPC:
+        default: "Select existing VPC"
 
 Parameters:
   CreateVPC:
@@ -108,7 +129,7 @@ Resources:
       TemplateURL: https://s3-eu-west-1.amazonaws.com/cf-templates-6q06p3u86qts-eu-west-1/security-groups.yaml
       Parameters:
         EnvironmentName: !Ref AWS::StackName
-        VPC: !if [NewVPC, !GetAtt VPC.Outputs.VPC, !Ref SelectVPC]
+        VPC: !If [NewVPC, !GetAtt VPC.Outputs.VPC, !Ref SelectVPC]
 
   ECS:
     Type: AWS::CloudFormation::Stack
@@ -119,7 +140,7 @@ Resources:
         InstanceType: !Ref InstanceType
         ClusterMinSize: !Ref ClusterMinSize
         ClusterMaxSize: !Ref ClusterMaxSize
-        VPC: !if [NewVPC, !GetAtt VPC.Outputs.VPC, !Ref SelectVPC]
+        VPC: !If [NewVPC, !GetAtt VPC.Outputs.VPC, !Ref SelectVPC]
         SecurityGroup: !GetAtt SecurityGroups.Outputs.ECSHostSecurityGroup
         Subnets: !GetAtt VPC.Outputs.PublicSubnets
 
@@ -127,3 +148,7 @@ Outputs:
   ECSCluster:
     Description: The ECS cluster deployed
     Value: !GetAtt ECS.Outputs.Cluster
+  VPCNetwork:
+    Description: VPC Network for ecs cluster
+    Value: !If [NewVPC, !GetAtt VPC.Outputs.VPC, !Ref SelectVPC]
+    
