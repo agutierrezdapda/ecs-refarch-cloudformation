@@ -1,0 +1,129 @@
+Description: >
+  This template deploy a AWS ECS Infraestructure.
+
+
+Parameters:
+  CreateVPC:
+    Description: Create New VPC?
+    Type: String
+    AllowedValues:
+      - Yes
+      - No
+    Default: Yes
+
+  SelectVPC:
+    Description: Select existing VPC only if CreateVPC is "No".
+    Type: AWS::EC2::VPC::Id
+
+  InstanceType:
+    Description: Select Instance type for ECS Cluster. More info in https://aws.amazon.com/es/ec2/instance-types/
+    Type: String
+    Default: t2.medium
+    AllowedValues:
+      - t2.nano
+      - t2.micro
+      - t2.small
+      - t2.medium
+      - t2.large
+      - t2.xlarge
+      - t2.2xlarge
+      - m3.medium
+      - m3.large
+      - m3.xlarge
+      - m3.2xlarge
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m4.10xlarge
+      - m4.16xlarge
+      - c3.large
+      - c3.xlarge
+      - c3.2xlarge
+      - c3.4xlarge
+      - c3.8xlarge
+      - c4.large
+      - c4.xlarge
+      - c4.2xlarge
+      - c4.4xlarge
+      - c4.8xlarge
+      - x1.32xlarge
+      - x1.16xlarge
+      - r3.large
+      - r3.xlarge
+      - r3.2xlarge
+      - r3.4xlarge
+      - r3.8xlarge
+      - r4.large
+      - r4.xlarge
+      - r4.2xlarge
+      - r4.4xlarge
+      - r4.8xlarge
+      - r4.16xlarge
+      - p2.xlarge
+      - p2.8xlarge
+      - p2.16xlarge
+      - g2.2xlarge
+      - g2.8xlarge
+      - f1.2xlarge
+      - f1.16xlarge
+      - i2.xlarge
+      - i2.2xlarge
+      - i2.4xlarge
+      - i2.8xlarge
+      - d2.xlarge
+      - d2.2xlarge
+      - d2.4xlarge
+      - d2.8xlarge
+
+  ClusterMinSize:
+    Description: Cluster minimal size
+    Type: Number
+    Default: 2
+
+  ClusterMaxSize:
+    Description: Cluster maximum size
+    Type: Number
+    Default: 10
+
+Conditions:
+  NewVPC: !Equals [!Ref CreateVPC, Yes]
+
+Resources:
+  VPC:
+    Type: AWS::CloudFormation::Stack
+    Condition: NewVPC
+    Properties:
+      TemplateURL: https://s3-eu-west-1.amazonaws.com/cf-templates-6q06p3u86qts-eu-west-1/vpc.yaml
+      Parameters:
+        EnvironmentName:    !Ref AWS::StackName
+        VpcCIDR:            10.10.0.0/16
+        PublicSubnet1CIDR:  10.10.8.0/21
+        PublicSubnet2CIDR:  10.10.16.0/21
+        PublicSubnet3CIDR:  10.10.24.0/21
+
+  SecurityGroups:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3-eu-west-1.amazonaws.com/cf-templates-6q06p3u86qts-eu-west-1/security-groups.yaml
+      Parameters:
+        EnvironmentName: !Ref AWS::StackName
+        VPC: !if [NewVPC, !GetAtt VPC.Outputs.VPC, !Ref SelectVPC]
+
+  ECS:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3-eu-west-1.amazonaws.com/cf-templates-6q06p3u86qts-eu-west-1/ecs-cluster.yaml
+      Parameters:
+        EnvironmentName: !Ref AWS::StackName
+        InstanceType: !Ref InstanceType
+        ClusterMinSize: !Ref ClusterMinSize
+        ClusterMaxSize: !Ref ClusterMaxSize
+        VPC: !if [NewVPC, !GetAtt VPC.Outputs.VPC, !Ref SelectVPC]
+        SecurityGroup: !GetAtt SecurityGroups.Outputs.ECSHostSecurityGroup
+        Subnets: !GetAtt VPC.Outputs.PublicSubnets
+
+Outputs:
+  ECSCluster:
+    Description: The ECS cluster deployed
+    Value: !GetAtt ECS.Outputs.Cluster
